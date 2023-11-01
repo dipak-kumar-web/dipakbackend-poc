@@ -161,4 +161,60 @@ router.get('/getDistance', async (req, res) => {
 
 
 
+//  day and week 
+// day and week 
+router.get('/user_list', async (req, res) => {
+  const { weekNo, dayOfWeek } = req.query;
+
+  // Calculate the date range for the specified week and day
+  const currentDate = new Date();
+  const startDate = new Date(currentDate);
+  startDate.setUTCDate(startDate.getUTCDate() - (currentDate.getUTCDay() + 7 - dayOfWeek) % 7 + weekNo * 7);
+  startDate.setUTCHours(0, 0, 0, 0);
+
+ console.log(startDate);
+ const endDate = new Date(startDate);
+ endDate.setUTCDate(endDate.getUTCDate() + 7);
+ endDate.setUTCHours(23, 59, 59, 999);
+ console.log(endDate);
+  try {
+  
+    // Query the database to find records within the specified date range
+    const data = await User.find({ register_at: { $gte: startDate, $lte: endDate } });
+console.log(data);
+    // Initialize an object to store data by day
+    const dayData = {
+      monday: [],
+      tuesday: [],
+      wednesday: [],
+      thursday: [],
+      friday: [],
+      saturday: [],
+      sunday: [],
+    };
+
+    // Group data by day
+    data.forEach((record) => {
+      const dayOfWeek = record.register_at.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+      const dayName = getDayName(dayOfWeek);
+      dayData[dayName].push({
+        name: record.name,
+        email: record.email,
+      });
+    });
+
+    res.json(dayData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
+// Helper function to get the day name
+function getDayName(dayOfWeek) {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[dayOfWeek];
+}
+
+
 module.exports = router;
